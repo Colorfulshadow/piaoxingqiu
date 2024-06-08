@@ -1,4 +1,4 @@
-# piaoxingqiu
+# 票星球抢票工具
 
 ```shell
 mv config.example.py config.py
