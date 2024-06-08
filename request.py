@@ -1,7 +1,7 @@
 import requests
 import datetime
+import logging
 from config import token, sckey
-
 
 # 根据项目id获取所有场次和在售状态
 def get_sessions(show_id) -> list | None:
@@ -14,9 +14,8 @@ def get_sessions(show_id) -> list | None:
     if response["statusCode"] == 200:
         return response["data"]["sessionVOs"]
     else:
-        print("get_sessions异常:" + str(response))
+        logging.error("get_sessions异常: " + str(response))
     return None
-
 
 # 根据场次id获取座位信息
 def get_seat_plans(show_id, session_id) -> list:
@@ -29,8 +28,7 @@ def get_seat_plans(show_id, session_id) -> list:
     if response["statusCode"] == 200:
         return response["data"]["seatPlans"]
     else:
-        raise Exception("get_seat_plans异常:" + str(response))
-
+        raise Exception("get_seat_plans异常: " + str(response))
 
 # 获取座位余票
 def get_seat_count(show_id, session_id) -> list:
@@ -43,7 +41,7 @@ def get_seat_count(show_id, session_id) -> list:
     if response["statusCode"] == 200:
         return response["data"]["seatPlans"]
     else:
-        raise Exception("get_seat_count异常:" + str(response))
+        raise Exception("get_seat_count异常: " + str(response))
 
 def send_wechat_message(message):
     api_url = f"https://sctapi.ftqq.com/{sckey}.send"
@@ -53,7 +51,6 @@ def send_wechat_message(message):
     }
     response = requests.post(api_url, data=data)
     return response.json()
-
 
 # 获取门票类型（快递送票EXPRESS,电子票E_TICKET,现场取票VENUE,电子票或现场取票VENUE_E）
 def get_deliver_method(show_id, session_id, seat_plan_id, price: int, qty: int) -> str:
@@ -88,8 +85,7 @@ def get_deliver_method(show_id, session_id, seat_plan_id, price: int, qty: int) 
     if response["statusCode"] == 200:
         return response["data"]["supportDeliveries"][0]["name"]
     else:
-        raise Exception("获取门票类型异常:" + str(response))
-
+        raise Exception("获取门票类型异常: " + str(response))
 
 # 获取观演人信息
 def get_audiences() -> list | None:
@@ -103,9 +99,8 @@ def get_audiences() -> list | None:
     if response["statusCode"] == 200:
         return response["data"]
     else:
-        print("get_audiences异常:" + str(response))
+        logging.error("get_audiences异常: " + str(response))
     return None
-
 
 # 获取收货地址
 def get_address() -> dict | None:
@@ -119,9 +114,8 @@ def get_address() -> dict | None:
     if response["statusCode"] == 200:
         return response["data"]
     else:
-        print("get_address异常:" + str(response))
+        logging.error("get_address异常: " + str(response))
     return None
-
 
 # 获取快递费
 def get_express_fee(show_id, session_id, seat_plan_id, price: int, qty: int, location_city_id: str) -> dict:
@@ -158,7 +152,7 @@ def get_express_fee(show_id, session_id, seat_plan_id, price: int, qty: int, loc
     if response["statusCode"] == 200:
         return response["data"][0]
     else:
-        raise Exception("获取快递费异常:" + str(response))
+        raise Exception("获取快递费异常: " + str(response))
 
 # 获取当前时间戳并生成1000001的id
 def generate_timestamp_id():
@@ -379,47 +373,15 @@ def create_order(show_id, session_id, seat_plan_id, price: int, qty: int, delive
             ],
             "one2oneAudiences": [{"audienceId": i, "sessionId": session_id} for i in audience_ids]
         }
-    # elif deliver_method == "ID_CARD":
-    #     data = {
-    #         "priceItemParam": [
-    #             {
-    #                 "applyTickets": [],
-    #                 "priceItemName": "票款总额",
-    #                 "priceItemVal": price * qty,
-    #                 "priceItemType": "TICKET_FEE",
-    #                 "priceItemSpecies": "SEAT_PLAN",
-    #                 "direction": "INCREASE",
-    #                 "priceDisplay": "￥" + str(price * qty)
-    #             }
-    #         ],
-    #         "items": [
-    #             {
-    #                 "sku": [
-    #                     {
-    #                         "skuId": seat_plan_id,
-    #                         "skuType": "SINGLE",
-    #                         "ticketPrice": price,
-    #                         "qty": qty,
-    #                         "ticket_items": [{"audienceId": i, "id": str(generate_timestamp_id())+'10000001'} for i in audience_ids]
-    #     }
-    #                 ],
-    #                 "spu": {
-    #                     "showId": show_id,
-    #                     "sessionId": session_id
-    #                 },
-    #                 "deliverMethod": deliver_method
-    #             }
-    #         ]
-    #     }
     else:
-        raise Exception("不支持的deliver_method:" + str(deliver_method))
+        raise Exception("不支持的deliver_method: " + str(deliver_method))
     # print(data)
     url = "https://m.piaoxingqiu.com/cyy_gatewayapi/trade/buyer/order/v3/create_order"
     response = requests.post(url=url, headers=headers, json=data).json()
     if response["statusCode"] == 200:
-        print("下单成功！请尽快支付！")
+        logging.info("下单成功！请尽快支付！")
         if sckey:
             result = send_wechat_message("你的订单已成功创建，快去支付吧！")
-            print(result)  # 输出推送结果
+            logging.info(result)  # 输出推送结果
     else:
-        raise Exception("下单异常:" + str(response))
+        raise Exception("下单异常: " + str(response))
